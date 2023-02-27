@@ -1,0 +1,69 @@
+---
+title: "class 5: Data Visualization"
+author: "Joshua"
+format: pdf
+---
+
+# Plotting in R
+
+R has multipled plotting and graphics systems. The most popular of which is **ggplot2**
+
+```{r}
+plot(cars)
+
+```
+
+Compared to base R plots ggplot is much more verbose. 
+
+To use ggplot one needs to first install the ggplot2 package, using the `install.packages()` command. This only needs to be done once. However, one must load the library every new session using the `library()` call.
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+bp <- ggplot(cars, aes(x=speed, y = dist)) +
+  geom_point()
+bp
+
+```
+```{r}
+bp + geom_smooth(method = "lm", se=FALSE)
+```
+Loading the differential expression dataset
+
+```{r}
+url <- "https://bioboot.github.io/bimm143_S20/class-material/up_down_expression.txt"
+genes <- read.delim(url)
+head(genes)
+```
+
+```{r}
+nrow(genes)
+ncol(genes)
+
+table(genes$State)
+
+100* sum(genes$State == "up") / nrow(genes) 
+```
+
+Plotting gene expression data
+```{r}
+p <- ggplot(genes) + 
+    aes(x=Condition1, y=Condition2, col = State) +
+    geom_point()
+p
+
+```
+
+```{r}
+p + scale_colour_manual( values=c("blue","gray","red") ) + 
+  labs(title = "Gene Expression Changes upon drug treatment", 
+       x = "Control (No Drug)", 
+       y = "Drug Treatment")
+
+```
+```{r}
+
+```
+

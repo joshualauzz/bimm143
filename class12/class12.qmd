@@ -1,0 +1,255 @@
+---
+title: "class12"
+format: html
+---
+
+```{r}
+#url <- "https://cran.r-project.org/src/contrib/Archive/locfit/locfit_1.5-9.2.tar.gz"
+#install.packages(url, repos=NULL, type="source")
+
+library(DESeq2)
+```
+```{r}
+url1 <- "https://bioboot.github.io/bimm143_W18/class-material/airway_scaledcounts.csv"
+url2 <- "https://bioboot.github.io/bimm143_W18/class-material/airway_metadata.csv"
+
+counts <- read.csv(url(url1), row.names = 1)
+metadata <- read.csv(url(url2))
+```
+
+```{r}
+head(counts)
+head(metadata)
+```
+
+### Q1
+**38694 genes**
+
+### Q2
+```{r}
+table(metadata$dex)
+```
+**there are 4 control**
+
+```{r}
+control <- metadata[metadata[,"dex"]=="control",]
+control.counts <- counts[ ,control$id]
+control.mean <- rowSums( control.counts )/4 
+head(control.mean)
+
+library(dplyr)
+control <- metadata %>% filter(dex=="control")
+control.counts <- counts %>% select(control$id) 
+control.mean <- rowSums(control.counts)/4
+head(control.mean)
+```
+
+### Q3 
+**instead of the numeric 4, it would be better to use the number of rows in the control df. this is becasuse if the number of control patients != 4, then the calculated mean will be wrong.**
+
+### Q4
+```{r}
+treated <- metadata[metadata[,"dex"]=="treated",]
+treated.mean <- rowSums( counts[ ,treated$id] )/4 
+names(treated.mean) <- counts$ensgene
+```
+
+```{r}
+meancounts <- data.frame(control.mean, treated.mean)
+colSums(meancounts)
+```
+### Q5(a)
+```{r}
+library(ggplot2)
+
+p <- ggplot(meancounts, aes(control.mean, treated.mean)) + geom_point() 
+p
+```
+### Q5(b)
+
+**geom_point()**
+
+### Q6
+**the log = "yx" argument**
+```{r}
+plot(meancounts[,c(1,2)], log = "yx")
+```
+```{r}
+meancounts$log2fc <- log2(meancounts[,"treated.mean"]/meancounts[,"control.mean"])
+head(meancounts)
+```
+```{r}
+zero.vals <- which(meancounts[,1:2]==0, arr.ind=TRUE)
+
+to.rm <- unique(zero.vals[,1])
+mycounts <- meancounts[-to.rm,]
+head(mycounts)
+```
+
+### Q7
+**the purpose of the arr.ind argument is to create a rowwise and columnwise index of the 0 elements. The first column of the output refers to the row-wise indices, and allows us to use a negative index to filter out any rows containing mean elements with 0, which produce Infs and NaNs**
+
+### Q8
+```{r}
+up.ind <- mycounts$log2fc > 2
+down.ind <- mycounts$log2fc < (-2)
+```
+
+```{r}
+sum(up.ind)
+sum(down.ind)
+```
+### Q8
+**250**
+
+### Q9
+**367**
+
+### Q10 
+**while these results may be indicative of significant difference, we cannot say so conclusively. That requires a greater knowledge and comparison of the distributions of the expression counts, likely involving some statistical test and a p-value**
+
+```{r}
+library(DESeq2)
+```
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData=counts, 
+                              colData=metadata, 
+                              design=~dex)
+dds
+```
+
+```{r}
+dds <- DESeq(dds)
+```
+
+
+```{r}
+res <- results(dds)
+res
+```
+```{r}
+summary(res)
+```
+
+```{r}
+res05 <- results(dds, alpha=0.05)
+summary(res05)
+```
+```{r}
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+```
+```{r}
+columns(org.Hs.eg.db)
+```
+
+```{r}
+res$symbol <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), # Our genenames
+                     keytype="ENSEMBL",        # The format of our genenames
+                     column="SYMBOL",          # The new format we want to add
+                     multiVals="first")
+```
+### Q11
+```{r}
+res$entrez <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), # Our genenames
+                     keytype="ENSEMBL",        # The format of our genenames
+                     column="ENTREZID",          # The new format we want to add
+                     multiVals="first")
+
+res$uniprot <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), # Our genenames
+                     keytype="ENSEMBL",        # The format of our genenames
+                     column="ENTREZID",          # The new format we want to add
+                     multiVals="first")
+
+res$genename <- mapIds(org.Hs.eg.db,
+                     keys=row.names(res), # Our genenames
+                     keytype="ENSEMBL",        # The format of our genenames
+                     column="GENENAME",          # The new format we want to add
+                     multiVals="first")
+```
+
+
+```{r}
+ord <- order( res$padj )
+#View(res[ord,])
+head(res[ord,])
+```
+
+```{r}
+write.csv(res[ord,], "deseq_results.csv")
+```
+
+```{r}
+plot( res$log2FoldChange,  -log(res$padj), 
+      xlab="Log2(FoldChange)",
+      ylab="-Log(P-value)")
+```
+```{r}
+plot( res$log2FoldChange,  -log(res$padj), 
+ ylab="-Log(P-value)", xlab="Log2(FoldChange)")
+
+# Add some cut-off lines
+abline(v=c(-2,2), col="darkgray", lty=2)
+abline(h=-log(0.05), col="darkgray", lty=2)
+```
+```{r}
+# Setup our custom point color vector 
+mycols <- rep("gray", nrow(res))
+mycols[ abs(res$log2FoldChange) > 2 ]  <- "red" 
+
+inds <- (res$padj < 0.01) & (abs(res$log2FoldChange) > 2 )
+mycols[ inds ] <- "blue"
+
+# Volcano plot with custom colors 
+plot( res$log2FoldChange,  -log(res$padj), 
+ col=mycols, ylab="-Log(P-value)", xlab="Log2(FoldChange)" )
+
+# Cut-off lines
+abline(v=c(-2,2), col="gray", lty=2)
+abline(h=-log(0.1), col="gray", lty=2)
+```
+```{r}
+library(pathview)
+library(gage)
+library(gageData)
+
+data(kegg.sets.hs)
+
+# Examine the first 2 pathways in this kegg set for humans
+head(kegg.sets.hs, 2)
+```
+
+```{r}
+foldchanges = res$log2FoldChange
+names(foldchanges) = res$entrez
+head(foldchanges)
+```
+```{r}
+keggres = gage(foldchanges, gsets=kegg.sets.hs)
+attributes(keggres)
+head(keggres$less,3)
+```
+
+```{r}
+pathview(gene.data=foldchanges, pathway.id="hsa05310")
+```
+### Q12
+
+```{r}
+rownames(keggres$less)[1:3]
+```
+
+```{r}
+pathview(gene.data=foldchanges, pathway.id="hsa05332")
+pathview(gene.data=foldchanges, pathway.id="hsa04940")
+
+```
+![hsa05332](hsa05332.png)
+![hsa04940](hsa04940.png)
+
+
+

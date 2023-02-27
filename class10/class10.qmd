@@ -1,0 +1,222 @@
+---
+title: "class10"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(skimr)
+```
+
+
+Importing candy data
+
+```{r}
+candy_file <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/candy-power-ranking/candy-data.csv"
+
+candy = read.csv(url(candy_file), row.names=1)
+head(candy)
+```
+### Q1
+
+```{r}
+length(rownames(candy))
+```
+**there are 85 types of candy**
+
+### Q2
+```{r}
+sum(candy$fruity)
+```
+**there are 38 types of fruity candy**
+
+### Q3
+
+My favourite is Hershey's Kisses
+
+```{r}
+candy["Hershey's Kisses", ]$winpercent
+
+```
+
+**The win percent is 55.37%**
+### Q4
+
+
+```{r}
+candy["Kit Kat", ]$winpercent
+
+```
+
+**The win percent is 76.77%**
+
+### Q5
+
+My favourite is Hershey's Kisses
+
+```{r}
+candy["Tootsie Roll Snack Bars", ]$winpercent
+
+```
+
+**The win percent is 49.65%**
+
+```{r}
+skim(candy)
+
+```
+### Q6 
+
+**the winpercent variable is on a different scale ot the other variables. it ranges from 0 to ~84, unlike the other variables scaling from 0 to 1.**
+
+### Q7
+
+**1 represents that the candy in question contains chocolate, and 0 represents that the candy does not contain chocolate.**
+
+### Q8 
+```{r}
+hist(candy$winpercent)
+```
+
+### Q9
+**the distribution of winpercents is not symmetrical. it seems that it is somewhat positively skewed**
+
+### Q10
+**the mean is below 50%**
+
+### Q11
+```{r}
+mean(candy[candy$chocolate==1,]$winpercent)
+mean(candy[candy$fruity==1,]$winpercent)
+
+```
+Chocolate is on average higher ranked
+
+### Q12
+```{r}
+t.test(candy[candy$chocolate==1,]$winpercent, candy[candy$fruity==1,]$winpercent)
+```
+**as p = 2.871e-08 < 0.05, the difference is significant**
+
+### Q13
+```{r}
+candy %>% arrange(winpercent) %>% head(5)
+
+```
+**the 5 least liked candy types are Nik L Nip, Boston baked beans, Chiclets, super bubble, and jawbusters**
+
+### Q14
+```{r}
+candy %>% arrange(desc(winpercent)) %>% head(5)
+
+```
+**5 most liked candys are reese's peanut butter cup, reese's miniatures, twix, kit kat, and snickers**
+
+### Q15
+
+```{r}
+library(ggplot2)
+
+ggplot(candy) +
+  aes(winpercent, rownames(candy)) + 
+  geom_col()
+```
+
+### Q16
+
+```{r}
+ggplot(candy) +
+  aes(winpercent, reorder(rownames(candy),winpercent)) + 
+  geom_col()
+```
+```{r}
+my_cols=rep("black", nrow(candy))
+my_cols[as.logical(candy$chocolate)] = "chocolate"
+my_cols[as.logical(candy$bar)] = "brown"
+my_cols[as.logical(candy$fruity)] = "pink"
+```
+
+```{r}
+ggplot(candy) + 
+  aes(winpercent, reorder(rownames(candy),winpercent)) +
+  geom_col(fill=my_cols) 
+```
+
+### Q17
+**worst ranked chocolate candy is sixlets**
+
+### Q18 
+**highest ranked fruity candy is starburst**
+
+## Q19
+
+```{r}
+library(ggrepel)
+
+# How about a plot of price vs win
+ggplot(candy) +
+  aes(winpercent, pricepercent, label=rownames(candy)) +
+  geom_point(col=my_cols) + 
+  geom_text_repel(col=my_cols, size=3.3, max.overlaps = 5)
+```
+
+**the highest ranked candy for the least money is Reese's Miniatures**
+
+### Q20
+**Top 5 most expensive candy types are Nik L Nip, Nestle Smarties, Ring pop, hershey's krackel, and hershey's milk chocolate. the least popular by winpercent is Nik L Nip**
+```{r}
+ord <- order(candy$pricepercent, decreasing = TRUE)
+head( candy[ord,c(11,12)], n=5 )
+```
+```{r}
+library(corrplot)
+```
+
+```{r}
+cij <- cor(candy)
+corrplot(cij)
+```
+**negatively correlated variables include fruity and chocolate, or pluribus and bar**
+
+### Q23
+**2 most positively correlate variables include chocolate and winpercent, and chocolate and bar**
+
+```{r}
+pca <- prcomp(candy, scale = TRUE)
+summary(pca)
+```
+
+```{r}
+plot(pca$x[,c(1,2)], col = my_cols, pch = 16)
+```
+```{r}
+my_data <- cbind(candy, pca$x[,1:3])
+p <- ggplot(my_data) + 
+        aes(x=PC1, y=PC2, 
+            size=winpercent/100,  
+            text=rownames(my_data),
+            label=rownames(my_data)) +
+        geom_point(col=my_cols)
+
+
+p + geom_text_repel(size=3.3, col=my_cols, max.overlaps = 7)  + 
+  theme(legend.position = "none") +
+  labs(title="Halloween Candy PCA Space",
+       subtitle="Colored by type: chocolate bar (dark brown), chocolate other (light brown), fruity (red), other (black)",
+       caption="Data from 538")
+```
+
+```{r}
+library(plotly)
+ggplotly(p)
+```
+```{r}
+par(mar=c(8,4,2,2))
+barplot(pca$rotation[,1], las=2, ylab="PC1 Contribution")
+```
+### Q24
+
+**fruity, pluribus, and hard are picked up strongly by PC1 in the positive direciton. This makes sense as all the fruity candy (colored pink) are to the right of the pca plot, or the positive direction for PC1. and we also know that pluribus and fruity are strongly correlated**
+
+
+

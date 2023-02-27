@@ -1,0 +1,203 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# What is in the PDB?
+
+PDB is the main database of biomolecular structures, and is available at rcsb.org 
+
+First we load the dataset into R
+```{r}
+PDB <- read.csv("./PDB.csv", row.names = 1)
+#PDB <- apply(PDB, 2, as.numeric)
+
+```
+
+Looks like there are some problems with the numbers saved in the PDB file. Firstly, they are saved as characters. Secondly, they have commas in them. Therefore, we define a function to eliminate commas from a vector of strings. 
+
+```{r}
+replaceCommas<-function(x){
+  return(as.numeric(gsub("\\,", "", x)))
+}
+```
+
+Let's try to use this on the first column of the PDB dataset
+
+```{r}
+replaceCommas(PDB$X.ray)
+```
+Looks like it works! Our next step is to apply this to all columns of the PDB dataset
+```{r}
+PDB_num <- as.data.frame(apply(PDB, 2, replaceCommas))
+rownames(PDB_num) <- rownames(PDB)
+```
+
+Now we can answer our question
+
+## Q1. What percentage of structures in the PDB are solved by X-Ray and Electron Microscopy.
+
+
+```{r}
+sum(PDB_num$X.ray) / sum(PDB_num$Total) * 100
+sum(PDB_num$EM) / sum(PDB_num$Total) * 100
+
+```
+**85.9% of structures in the PDB are solved by X-ray and 7.0% of structures by EM**
+
+## Q2: What proportion of structures in the PDB are protein?
+
+```{r}
+PDB_num$Total[1] / sum(PDB_num$Total) * 100
+```
+**86.9% of structures in the PDB are protein**
+
+## Q3: Type HIV in the PDB website search box on the home page and determine how many HIV-1 protease structures are in the current PDB?
+
+It is not straightforward to find all HIV-1 protease structures using plain text searching on databases.
+
+## Q4: Water molecules normally have 3 atoms. Why do we see just one atom per water molecule in this structure?
+
+We only see one atom per water molecule in this structure because the crystal structure does not have the sufficient resolution to view/resolve Hydrogen atoms, as they are too small in size. 
+
+## Q5: There is a critical “conserved” water molecule in the binding site. Can you identify this water molecule? What residue number does this water molecule have
+
+The water molecule has the residue number 308. 
+
+## Q6: Generate and save a figure clearly showing the two distinct chains of HIV-protease along with the ligand. You might also consider showing the catalytic residues ASP 25 in each chain and the critical water (we recommend “Ball & Stick” for these side-chains). Add this figure to your Quarto document.
+
+![3D representation of 1HSG structure with ASP25 residues shown in ball and stick conformation](1HSG.png)
+# Intro to bio3d in R
+
+```{r}
+library(bio3d)
+```
+Loading the 1hsg structure
+```{r}
+pdb <- read.pdb("1hsg")
+pdb
+```
+## Q7: How many amino acid residues are there in this pdb object? 
+198
+
+## Q8: Name one of the two non-protein residues? 
+HOH
+
+## Q9: How many protein chains are in this structure?
+2
+
+```{r}
+attributes(pdb)
+```
+## Predicting functional motions of a single structure
+
+Let’s read a new PDB structure of Adenylate Kinase and perform Normal mode analysis.
+
+ 
+```{r}
+adk <- read.pdb("6s36")
+
+adk
+```
+```{r}
+# Perform flexiblity prediction
+m <- nma(adk)
+
+plot(m)
+```
+
+
+```{r}
+mktrj(m, file="adk_m7.pdb")
+
+```
+
+# Section 4. Comparative structure analysis
+
+```{r}
+library(bio3d)
+library(BiocManager)
+```
+
+## Q10. 
+
+**the msa package**
+
+## Q11. 
+
+**bio3d-view**
+
+## Q12. 
+
+**TRUE**
+
+### Search and retrieve ADK structures
+
+```{r}
+aa <- get.seq("1ake_A")
+aa
+
+```
+## Q13. 
+**214**
+
+```{r}
+#b <- blast.pdb(aa)
+#we don't want to run this every time
+
+#saveRDS(b, file = "blast_results.RDS")
+```
+
+```{r}
+b <- readRDS("blast_results.RDS")
+```
+
+```{r}
+hits <- plot(b)
+```
+```{r}
+hits$pdb.id
+```
+
+```{r}
+# Download releated PDB files
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+```
+Next we are going to align and superimpose all these structures
+```{r}
+pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
+
+```
+
+```{r}
+# Vector containing PDB codes for figure axis
+ids <- basename.pdb(pdbs$id)
+
+# Draw schematic alignment
+plot(pdbs, labels=ids)
+```
+```{r}
+anno <- pdb.annotate(ids)
+unique(anno$source)
+anno
+```
+```{r}
+pc.xray <- pca(pdbs)
+plot(pc.xray)
+```
+
+```{r}
+# Calculate RMSD
+rd <- rmsd(pdbs)
+
+# Structure-based clustering
+hc.rd <- hclust(dist(rd))
+grps.rd <- cutree(hc.rd, k=3)
+
+plot(pc.xray, 1:2, col="grey50", bg=grps.rd, pch=21, cex=1)
+
+```
+```{r}
+
+```
+
+
