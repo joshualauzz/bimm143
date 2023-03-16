@@ -1,0 +1,143 @@
+---
+title: "class17"
+format: html
+---
+
+```{r}
+
+library(tidyverse)
+
+url <- "https://data.chhs.ca.gov/dataset/ead44d40-fd63-4f9f-950a-3b0111074de8/resource/ec32eece-7474-4488-87f0-6e91cb577458/download/covid19vaccinesbyzipcode_test.csv"
+
+vax <- read.csv("covid19vaccinesbyzipcode_test.csv")
+head(vax)
+```
+
+```{r}
+skimr::skim(vax)
+
+```
+```{r}
+library(lubridate)
+```
+
+```{r}
+today()
+```
+
+```{r}
+vax$as_of_date <- ymd(vax$as_of_date)
+
+```
+```{r}
+today() - vax$as_of_date[1]
+```
+```{r}
+vax$as_of_date[nrow(vax)] - vax$as_of_date[1]
+```
+```{r}
+library(zipcodeR)
+```
+
+```{r}
+geocode_zip('92037')
+zip_distance('92037','92109')
+reverse_zipcode(c('92037', "92109"))
+```
+
+```{r}
+sd <- vax[ vax$county == "San Diego" , ]
+nrow(sd)
+```
+
+```{r}
+sd.10 <- filter(vax, county == "San Diego" &
+                age5_plus_population > 10000)
+```
+
+```{r}
+sd.10.1115 <- filter(sd, as_of_date == "2022-11-15") 
+```
+
+```{r}
+library(ggplot2)
+
+hist(sd.10.1115$percent_of_population_fully_vaccinated, main = "Histogram of Vaccination Rates Across SD County", xlab = "Percent of Population Fully Vaccinated on 2022-11-15")
+```
+
+```{r}
+ucsd <- filter(sd, zip_code_tabulation_area=="92037")
+ucsd[1,]$age5_plus_population
+```
+
+```{r}
+p <- ggplot(ucsd) +
+  aes(as_of_date,
+      percent_of_population_fully_vaccinated) +
+  geom_point() +
+  geom_line(group=1) +
+  ylim(c(0,1)) +
+  labs(x="Date", y="Percent Vaccinated")
+
+p
+```
+```{r}
+vax.36 <- filter(vax, age5_plus_population > 36144 &
+                as_of_date == "2022-11-15")
+```
+
+```{r}
+mean.36 <- mean(vax.36$percent_of_population_fully_vaccinated)
+
+p + geom_hline(yintercept = mean.36, color = "red", linetype = 2)
+```
+
+### Q17 
+
+```{r}
+summary(vax.36$percent_of_population_fully_vaccinated)
+```
+
+### Q18 
+```{r}
+ggplot(vax.36, aes(percent_of_population_fully_vaccinated)) + geom_histogram() + xlim(c(0,1))
+```
+
+### Q19
+```{r}
+vax %>% filter(as_of_date == "2022-11-15") %>%  
+  filter(zip_code_tabulation_area=="92040") %>%
+  select(percent_of_population_fully_vaccinated)
+```
+
+```{r}
+vax %>% filter(as_of_date == "2022-11-15") %>%  
+  filter(zip_code_tabulation_area=="92109") %>%
+  select(percent_of_population_fully_vaccinated)
+```
+```{r}
+mean(vax.36$percent_of_population_fully_vaccinated)
+```
+
+**Neither are above the average of 0.719**
+
+### Q20
+```{r}
+vax.36.all <- filter(vax, age5_plus_population > 36144)
+
+
+ggplot(vax.36.all) +
+  aes(as_of_date,
+      percent_of_population_fully_vaccinated, 
+      group=zip_code_tabulation_area) +
+  geom_line(alpha=0.2, color="blue") +
+  ylim(c(0,1)) +
+  labs(x="Date", y="Percent Vaccinated",
+       title="Vaccination rate accross California",
+       subtitle="Only areas with a population above 36k are shown") +
+  geom_hline(yintercept = mean(vax.36.all$persons_fully_vaccinated), linetype=1)
+```
+
+### Q21 
+
+**Better now that vaccination rates are higher**

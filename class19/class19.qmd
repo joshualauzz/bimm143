@@ -1,0 +1,238 @@
+---
+title: "class19"
+author: Joshua Lau
+format: html
+---
+
+```{r}
+#library(addin)
+```
+
+```{r echo=FALSE}
+cdc <- data.frame(
+                                 Year = c(1922L,1923L,1924L,1925L,
+                                          1926L,1927L,1928L,1929L,1930L,1931L,
+                                          1932L,1933L,1934L,1935L,1936L,
+                                          1937L,1938L,1939L,1940L,1941L,1942L,
+                                          1943L,1944L,1945L,1946L,1947L,
+                                          1948L,1949L,1950L,1951L,1952L,
+                                          1953L,1954L,1955L,1956L,1957L,1958L,
+                                          1959L,1960L,1961L,1962L,1963L,
+                                          1964L,1965L,1966L,1967L,1968L,1969L,
+                                          1970L,1971L,1972L,1973L,1974L,
+                                          1975L,1976L,1977L,1978L,1979L,1980L,
+                                          1981L,1982L,1983L,1984L,1985L,
+                                          1986L,1987L,1988L,1989L,1990L,
+                                          1991L,1992L,1993L,1994L,1995L,1996L,
+                                          1997L,1998L,1999L,2000L,2001L,
+                                          2002L,2003L,2004L,2005L,2006L,2007L,
+                                          2008L,2009L,2010L,2011L,2012L,
+                                          2013L,2014L,2015L,2016L,2017L,2018L,
+                                          2019L),
+         No..Reported.Pertussis.Cases = c(107473,164191,165418,152003,
+                                          202210,181411,161799,197371,
+                                          166914,172559,215343,179135,265269,
+                                          180518,147237,214652,227319,103188,
+                                          183866,222202,191383,191890,109873,
+                                          133792,109860,156517,74715,69479,
+                                          120718,68687,45030,37129,60886,
+                                          62786,31732,28295,32148,40005,
+                                          14809,11468,17749,17135,13005,6799,
+                                          7717,9718,4810,3285,4249,3036,
+                                          3287,1759,2402,1738,1010,2177,2063,
+                                          1623,1730,1248,1895,2463,2276,
+                                          3589,4195,2823,3450,4157,4570,
+                                          2719,4083,6586,4617,5137,7796,6564,
+                                          7405,7298,7867,7580,9771,11647,
+                                          25827,25616,15632,10454,13278,
+                                          16858,27550,18719,48277,28639,32971,
+                                          20762,17972,18975,15609,18617)
+       )
+
+head(cdc)
+```
+
+### Q1
+```{r}
+library(ggplot2)
+
+p <- ggplot(cdc, aes(Year, No..Reported.Pertussis.Cases)) + 
+  geom_point() + 
+  geom_line() + 
+  theme_bw() + 
+  labs(title = "Pertussis Cases Over Time",
+       subtitle = "CDC Data from 1920 to 2019")
+
+p
+```
+### Q2
+```{r}
+p + geom_vline(xintercept = 1946, color = "blue", linetype = 2) +
+  geom_vline(xintercept = 1996, color = "red", linetype = 2) +
+  annotate("text", x=1948.5, y=280000, label="wP", color = "blue") +
+  annotate("text", x=1998.5, y=280000, label="aP", color = "red")
+
+```
+### Q3
+We see that upon the change to aP vaccines there begins to be an increase in pertussis cases. Some reasons for this may be that the aP vaccine confers less immunity over time, or a less long lasting immunity than the wP vaccine. Other reasons may include vaccine hestitancy, greater volume of tests conducted and improvement in sensitivity, or evolution of the pertussis bacteria to avoid vaccine driven immunity. 
+
+```{r}
+library(jsonlite)
+subject <- read_json("https://www.cmi-pb.org/api/subject", simplifyVector = TRUE)
+
+head(subject)
+```
+### Q4
+```{r}
+table(subject$infancy_vac)
+```
+
+### Q5
+```{r}
+table(subject$biological_sex)
+```
+
+### Q6
+```{r}
+table(subject$race, subject$biological_sex)
+```
+
+```{r}
+library(lubridate)
+
+subject$age <- time_length (today() - ymd(subject$year_of_birth), "years")
+```
+
+```{r}
+subject$age
+```
+### Q7
+
+```{r echo = FALSE}
+library(tidyverse)
+```
+
+```{r}
+ap <- subject %>% filter(infancy_vac == "aP")
+wp <- subject %>% filter(infancy_vac == "wP")
+
+mean(ap$age)
+mean(wp$age)
+```
+
+**are they significantly different?**
+```{r}
+t.test(ap$age, wp$age)
+```
+**yes, p < 0.05**
+
+### Q8
+
+```{r}
+subject$age_at_boost <- time_length(ymd(subject$date_of_boost) - ymd(subject$year_of_birth), "years")
+
+head(subject$age_at_boost)
+```
+
+```{r}
+ggplot(subject) +
+  aes(age,
+      fill=as.factor(infancy_vac)) +
+  geom_histogram(show.legend=FALSE) +
+  facet_wrap(vars(infancy_vac), nrow=2) 
+```
+**yes they appear to be significantly different, average age of wP is higher and distributions do not overlap**
+
+```{r}
+specimen <- read_json("https://www.cmi-pb.org/api/specimen", simplifyVector = TRUE) 
+titer <- read_json("https://www.cmi-pb.org/api/ab_titer", simplifyVector = TRUE) 
+```
+
+### Q9
+```{r}
+meta <- inner_join(specimen, subject)
+dim(meta)
+```
+
+### Q10
+```{r}
+abdata <- inner_join(titer, meta)
+dim(abdata)
+```
+### Q11
+
+```{r}
+table(abdata$isotype)
+```
+### Q12
+```{r}
+table(abdata$visit)
+
+```
+
+**Visit 8 has much lower frequency than other visits**
+```{r}
+ig1 <- abdata %>% filter(isotype == "IgG1", visit!=8)
+head(ig1)
+```
+
+### Q13
+```{r}
+ggplot(ig1) +
+  aes(MFI, antigen) +
+  geom_boxplot() + 
+  facet_wrap(vars(visit), nrow=2) +
+  theme(axis.text.x = element_blank())
+```
+### Q14
+**the FIM2/3 antigen shows the greatest change in level of IG1 antibody titers recognizing it over time. This is the mixture of Fim2 and Fim3 proteins, which are fimbrium proteins that form pillus in bacteria. The change in MFI could be because that the FIM2/3 antigen is eliciting the immune response  **
+
+```{r}
+ggplot(ig1) +
+  aes(MFI, antigen, col=infancy_vac ) +
+  geom_boxplot(show.legend = FALSE) + 
+  facet_wrap(vars(infancy_vac, visit), nrow=2)
+```
+
+### Q15
+```{r}
+filter(ig1, antigen=="Measles") %>%
+  ggplot() +
+  aes(MFI, col=infancy_vac) +
+  geom_boxplot(show.legend = TRUE) +
+  facet_wrap(vars(visit)) +
+  theme_bw()
+```
+
+```{r}
+filter(ig1, antigen=="FIM2/3") %>%
+  ggplot() +
+  aes(MFI, col=infancy_vac) +
+  geom_boxplot(show.legend = TRUE) +
+  facet_wrap(vars(visit)) +
+  theme_bw()
+```
+### Q16
+**The time course data of IG1 recognition for measles antigen does not change much through time. On the other hand, the time course data for IG1 recognition of FIM2/3 shows an increase throughout time from visits 1 - 5 and a decrease from visits 6 onwards.**
+
+### Q17
+**The aP and wP data show similar trends (increase from visits 1-5 and decrease 6 onwards) for the FIM2/3 antigen. A difference is that the aP vaccination leads to higher IG1 maximum response on visit 5, and a slower rate of decrease from visit 6 onwards.**
+
+### Q18
+```{r}
+url <- "https://www.cmi-pb.org/api/v2/rnaseq?versioned_ensembl_gene_id=eq.ENSG00000211896.7"
+
+rna <- read_json(url, simplifyVector = TRUE)
+ssrna <- inner_join(rna, meta)
+```
+```{r}
+ggplot(ssrna) +
+  aes(visit, tpm,group=subject_id) +
+  geom_point() +
+  geom_line(alpha=0.2)
+```
+### Q19
+**expression of IG1 is highest at visit 4**
+
+### Q20
+**the expression trend roughly matches the time course data of the antibody titer data, which shows an increase in IG1 activity from visit 1-5. However, the difference is that the maximum MFI in the antibody data was typically day 5, where here we see that the expression is maximum at visit 4**
