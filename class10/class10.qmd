@@ -1,6 +1,7 @@
 ---
 title: "class10"
-format: html
+author: Joshua Lau
+format: gfm
 ---
 
 ```{r}

@@ -1,7 +1,7 @@
 ---
 title: "HW6"
 author: "Joshua Lau"
-format: pdf
+format: gfm
 ---
 
 ## A. Can you improve this analysis code?

@@ -1,7 +1,7 @@
 ---
 title: "class09"
 author: Joshua Lau
-format: pdf
+format: gfm
 ---
 
 # What is in the PDB?
