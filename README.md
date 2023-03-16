@@ -1,4 +1,4 @@
 # bimm143
-coursework pertaining to bimm143: Bioinformatics Laboratory
+This page contains my pertaining to BIMM143: Bioinformatics Laboratory at UC San Diego in Winter 2023.
 
-This repo is for my UCSD bioinformatics class. 2023 March 16
+- Class 7: [Introduction to machine learning for Bioinformatics 1](https://github.com/joshualauzz/bimm143/tree/main/class07)
