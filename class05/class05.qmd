@@ -1,7 +1,7 @@
 ---
 title: "class 5: Data Visualization"
 author: "Joshua"
-format: pdf
+format: gfm
 ---
 
 # Plotting in R
