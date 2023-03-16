@@ -208,9 +208,10 @@ p + geom_text_repel(size=3.3, col=my_cols, max.overlaps = 7)  +
 ```
 
 ```{r}
-library(plotly)
-ggplotly(p)
+#library(plotly)
+#ggplotly(p)
 ```
+
 ```{r}
 par(mar=c(8,4,2,2))
 barplot(pca$rotation[,1], las=2, ylab="PC1 Contribution")

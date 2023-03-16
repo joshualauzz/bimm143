@@ -1,7 +1,7 @@
 ---
 title: "class11"
 author: Joshua Lau
-format: html
+format: gfm
 ---
 ```{r}
 library(tidyverse)

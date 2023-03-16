@@ -1,6 +1,6 @@
 ---
 title: "class17"
-format: html
+format: gfm
 ---
 
 ```{r}

@@ -1,7 +1,7 @@
 ---
 title: "class19"
 author: Joshua Lau
-format: html
+format: gfm
 ---
 
 ```{r}
